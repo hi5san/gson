@@ -18,6 +18,8 @@ package com.google.gson.internal.reflect;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 
 import com.google.gson.JsonIOException;
 
@@ -36,12 +38,17 @@ final class UnsafeReflectionAccessor extends ReflectionAccessor {
 
   /** {@inheritDoc} */
   @Override
-  public void makeAccessible(AccessibleObject ao) {
+  public void makeAccessible(final AccessibleObject ao) {
     boolean success = makeAccessibleWithUnsafe(ao);
     if (!success) {
       try {
         // unsafe couldn't be found, so try using accessible anyway
-        ao.setAccessible(true);
+        AccessController.doPrivileged(new PrivilegedAction<Void>() {
+          public Void run() {
+            ao.setAccessible(true);
+            return null;
+          }
+        });
       } catch (SecurityException e) {
         throw new JsonIOException("Gson couldn't modify fields for " + ao
           + "\nand sun.misc.Unsafe not found.\nEither write a custom type adapter,"

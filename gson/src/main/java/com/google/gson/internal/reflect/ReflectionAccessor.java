@@ -16,6 +16,8 @@
 package com.google.gson.internal.reflect;
 
 import java.lang.reflect.AccessibleObject;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 
 import com.google.gson.internal.JavaVersion;
 
@@ -33,7 +35,14 @@ import com.google.gson.internal.JavaVersion;
 public abstract class ReflectionAccessor {
 
   // the singleton instance, use getInstance() to obtain
-  private static final ReflectionAccessor instance = JavaVersion.getMajorJavaVersion() < 9 ? new PreJava9ReflectionAccessor() : new UnsafeReflectionAccessor();
+  private static final ReflectionAccessor instance;
+  static {
+    instance = AccessController.doPrivileged(new PrivilegedAction<ReflectionAccessor>() {
+      public ReflectionAccessor run() {
+        return JavaVersion.getMajorJavaVersion() < 9 ? new PreJava9ReflectionAccessor() : new UnsafeReflectionAccessor();
+      }
+    });
+  } 
 
   /**
    * Does the same as {@code ao.setAccessible(true)}, but never throws
